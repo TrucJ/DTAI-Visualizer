@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <title>Game Visualizer</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        #controls {
+            margin: 10px;
+        }
+        canvas {
+            border: 1px solid #ccc;
+            background-color: #f8f8f8;
+        }
+    </style>
+</head>
+<body>
+<div id="controls">
+    <input type="file" id="fileInput" accept=".json">
+    <span id="info"></span>
+</div>
+<canvas id="visualizerCanvas" width="800" height="600"></canvas>
+
+<script>
+  const canvas = document.getElementById('visualizerCanvas');
+  const ctx = canvas.getContext('2d');
+  const fileInput = document.getElementById('fileInput');
+  const infoSpan = document.getElementById('info');
+
+  // Các cấu hình cơ bản cho vẽ hexagon
+  const hexSize = 30; // bán kính hexagon
+  let scale = 1;
+  const sqrt3 = Math.sqrt(3);
+  const centerX = canvas.width / 2;
+  const centerY = canvas.height / 2;
+
+  // Màu sắc cho các loại ô (cells)
+  const cellColors = {
+    "D": "rgba(255, 100, 100, 0.8)",  // ô danger
+    "S": "rgba(135, 206, 235, 0.8)",  // ô shield
+    "": "white" // ô trống
+  };
+
+  // Hàm chuyển đổi từ tọa độ axial sang pixel
+  function axialToPixel(q, r) {
+    const x = hexSize * scale * sqrt3 * (q + r/2);
+    const y = hexSize * scale * (3/2 * r);
+    return { x: centerX + x, y: centerY + y };
+  }
+
+  // Hàm lấy tọa độ các đỉnh của hexagon tại tâm (cx,cy)
+  function getHexCorners(cx, cy) {
+    const corners = [];
+    const size = hexSize * scale;
+    for (let i = 0; i < 6; i++) {
+      const angle = Math.PI/180 * (60 * i - 30);
+      corners.push({
+        x: cx + size * Math.cos(angle),
+        y: cy + size * Math.sin(angle)
+      });
+    }
+    return corners;
+  }
+
+  // Vẽ hexagon tại vị trí (cx,cy) với label và màu nền
+  function drawHex(cx, cy, label, fillColor) {
+    const corners = getHexCorners(cx, cy);
+    ctx.beginPath();
+    ctx.moveTo(corners[0].x, corners[0].y);
+    for (let i = 1; i < corners.length; i++) {
+      ctx.lineTo(corners[i].x, corners[i].y);
+    }
+    ctx.closePath();
+    ctx.fillStyle = fillColor;
+    ctx.fill();
+    ctx.strokeStyle = "black";
+    ctx.stroke();
+
+    // Vẽ label với font in đậm, kích thước tỷ lệ thuận với scale
+    if (label) {
+      const fontSize = 16 * scale;
+      if (fontSize > 6) {
+        ctx.font = `bold ${fontSize}px Arial`;
+        ctx.fillStyle = "black";
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        ctx.fillText(label, cx, cy);
+      }
+    }
+  }
+
+  // Hàm vẽ map dựa trên dữ liệu JSON (các key ở dạng snake_case)
+  function drawMap(data) {
+    // Xóa canvas
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    // Sử dụng phần tử đầu tiên của mảng JSON
+    const map = data[0].map;
+    // Vẽ các ô cell của map (cells có các key: q, r, s, value)
+    map.cells.forEach(cell => {
+      const { q, r, s, value } = cell;
+      const { x, y } = axialToPixel(q, r);
+      let fillColor = cellColors[value] || "white";
+      let label = value; // Hiển thị giá trị của cell
+      drawHex(x, y, label, fillColor);
+    });
+
+    // Nếu treasure xuất hiện, vẽ một dấu hiệu ở giữa map
+    if (map.treasure_appeared) {
+      ctx.beginPath();
+      ctx.arc(centerX, centerY, 15 * scale, 0, 2 * Math.PI);
+      ctx.fillStyle = "gold";
+      ctx.fill();
+      ctx.strokeStyle = "black";
+      ctx.stroke();
+      ctx.font = `bold ${14 * scale}px Arial`;
+      ctx.fillStyle = "black";
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.fillText(map.treasure_value, centerX, centerY);
+    }
+
+    // Vẽ các player (players có các key: q, r, s, points, shield, alive, missiles, missiles_fired)
+    const players = data[0].players;
+    players.forEach((player, index) => {
+      const { q, r, s, points, shield, alive, missiles, missiles_fired } = player;
+      const { x, y } = axialToPixel(q, r);
+      // Vẽ vòng tròn cho player, xanh nếu alive, xám nếu không
+      ctx.beginPath();
+      ctx.arc(x, y, 10 * scale, 0, 2 * Math.PI);
+      ctx.fillStyle = alive ? "limegreen" : "gray";
+      ctx.fill();
+      ctx.strokeStyle = "black";
+      ctx.stroke();
+
+      // Hiển thị điểm số của player
+      ctx.font = `bold ${12 * scale}px Arial`;
+      ctx.fillStyle = "black";
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.fillText(points, x, y);
+
+      // Nếu player có shield, vẽ vòng tròn bao quanh
+      if (shield) {
+        ctx.beginPath();
+        ctx.arc(x, y, 15 * scale, 0, 2 * Math.PI);
+        ctx.strokeStyle = "dodgerblue";
+        ctx.lineWidth = 3 * scale;
+        ctx.stroke();
+        ctx.lineWidth = 1;
+      }
+
+      // Vẽ các missile đã bắn nếu có (missiles_fired là mảng các đối tượng có key q, r, s)
+      if (missiles_fired && missiles_fired.length > 0) {
+        missiles_fired.forEach(missile => {
+          const { q: mq, r: mr, s: ms } = missile;
+          const pos = axialToPixel(mq, mr);
+          ctx.beginPath();
+          ctx.arc(pos.x, pos.y, 5 * scale, 0, 2 * Math.PI);
+          ctx.fillStyle = "orangered";
+          ctx.fill();
+          ctx.strokeStyle = "black";
+          ctx.stroke();
+        });
+      }
+    });
+
+    // Hiển thị thông tin các lượt di chuyển (moveleft)
+    infoSpan.textContent = `Moves left: ${map.moveleft}`;
+  }
+
+  // Xử lý file upload
+  fileInput.addEventListener('change', function(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = function(evt) {
+      try {
+        const jsonData = JSON.parse(evt.target.result);
+        // jsonData theo struct snake_case, là 1 mảng
+        drawMap(jsonData);
+      } catch (err) {
+        alert("Lỗi đọc file JSON: " + err.message);
+      }
+    };
+    reader.readAsText(file);
+  });
+</script>
+</body>
+</html>
