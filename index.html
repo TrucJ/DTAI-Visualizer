@@ -7,18 +7,19 @@
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-<!-- Overlay upload file -->
-<div id="uploadOverlay" class="overlay">
-    <div class="upload-area" id="uploadArea">
-        <h2>Upload file JSON</h2>
-        <p>Click hoặc kéo thả file JSON vào đây</p>
-        <input type="file" id="overlayFileInput" accept=".json" hidden>
-    </div>
-</div>
 
 <div class="container">
     <!-- Left Panel: Canvas hiển thị map -->
     <div class="left-panel">
+        <!-- Overlay upload file -->
+        <div id="uploadOverlay" class="overlay">
+            <div class="upload-area" id="uploadArea">
+                <h2>Upload file</h2>
+                <p>Click hoặc kéo thả file JSON vào đây</p>
+                <input type="file" id="overlayFileInput" accept=".json" hidden>
+            </div>
+        </div>
+        <!-- Canvas hiển thị map -->
         <canvas id="hexMap"></canvas>
     </div>
     <!-- Right Panel: Control Panel -->

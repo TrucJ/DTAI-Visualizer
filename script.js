@@ -32,6 +32,7 @@ const prevBtn = document.getElementById("prevBtn");
 const nextBtn = document.getElementById("nextBtn");
 const infoSpan = document.getElementById("info");
 const uploadArea = document.getElementById("uploadArea");
+const overlay = document.getElementById("uploadOverlay");
 const overlayFileInput = document.getElementById("overlayFileInput");
 
 // Dữ liệu các state (mảng các state) và state hiện tại
