@@ -113,20 +113,40 @@ function axialToPixel(q, r) {
   return {x: center.x + x, y: center.y + y};
 }
 
-// --- Hàm vẽ map dựa trên dữ liệu state ---
-// Dữ liệu state có cấu trúc snake_case:
-// {
-//   map: { moveleft, treasure_appeared, treasure_value, cells: [{q, r, s, value}, ...] },
-//   players: [{q, r, s, points, shield, alive, missiles_fired: [{q, r, s}, ...]}, ... ]
-// }
+// Hàm cập nhật bảng thông tin các player
+function updatePlayersTable(state) {
+  const tableBody = document.querySelector("#playersTable tbody");
+  tableBody.innerHTML = ""; // Xóa dữ liệu cũ
+
+  state.players.forEach((player, index) => {
+    const row = document.createElement("tr");
+
+    const cellPlayer = document.createElement("td");
+    cellPlayer.textContent = index + 1;
+    row.appendChild(cellPlayer);
+
+    const cellPoints = document.createElement("td");
+    cellPoints.textContent = player.points;
+    row.appendChild(cellPoints);
+
+    const cellMissiles = document.createElement("td");
+    const missiles = player.missiles;
+    cellMissiles.textContent = missiles;
+    row.appendChild(cellMissiles);
+
+    tableBody.appendChild(row);
+  });
+}
+
+// --- Hàm vẽ map (drawMap) cập nhật ---
+// Sau khi vẽ map và các player, gọi updatePlayersTable(state)
 function drawMap(state) {
   updateCanvasSize();
   const center = getCenter();
   ctx.clearRect(0, 0, canvas.width, canvas.height);
 
   const map = state.map;
-
-  radius = map.radius
+  radius = map.radius;
 
   // Tạo dictionary cho các cell có trong dữ liệu (key: "q,r,s")
   const cellMap = {};
@@ -156,7 +176,6 @@ function drawMap(state) {
           fillColor = "white";
         }
       } else {
-        // Ô trống vẽ màu trắng
         fillColor = "white";
       }
       drawHex(pos.x, pos.y, label, fillColor);
@@ -216,7 +235,6 @@ function drawMap(state) {
         ctx.fill();
         ctx.strokeStyle = "black";
         ctx.stroke();
-
         // Vòng tròn trong
         ctx.beginPath();
         ctx.arc(mPos.x, mPos.y, 4 * scale, 0, 2 * Math.PI);
@@ -229,6 +247,8 @@ function drawMap(state) {
   });
 
   infoSpan.textContent = `Moves left: ${map.moveleft} | State: ${currentState + 1} / ${states.length}`;
+  // Cập nhật bảng player
+  updatePlayersTable(state);
 }
 
 // --- Xử lý sự kiện canvas: kéo, zoom, touch ---

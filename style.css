@@ -54,3 +54,25 @@ button {
     border-radius: 5px;
     text-align: center;
 }
+
+#playersTable {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 10px;
+}
+
+#playersTable th,
+#playersTable td {
+    border: 1px solid #ccc;
+    padding: 8px;
+    text-align: center;
+}
+
+#playersTable th {
+    background-color: #ddd;
+    font-weight: bold;
+}
+
+#playersTable tr:nth-child(even) {
+    background-color: #f9f9f9;
+}
