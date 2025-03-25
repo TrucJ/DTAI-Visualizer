@@ -6,13 +6,20 @@
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-<div id="controls">
-    <input type="file" id="fileInput" accept=".json">
-    <button id="prevBtn" disabled>Previous</button>
-    <button id="nextBtn" disabled>Next</button>
-    <span id="info"></span>
+<div class="container">
+    <!-- Left Panel: chứa canvas -->
+    <div class="left-panel">
+        <canvas id="visualizerCanvas"></canvas>
+    </div>
+    <!-- Right Panel: chứa các nút điều khiển và thông tin -->
+    <div class="right-panel">
+        <h2>Control Panel</h2>
+        <input type="file" id="fileInput" accept=".json"><br><br>
+        <button id="prevBtn" disabled>Previous</button>
+        <button id="nextBtn" disabled>Next</button>
+        <p id="info"></p>
+    </div>
 </div>
-<canvas id="visualizerCanvas" width="800" height="600"></canvas>
 
 <script src="script.js"></script>
 </body>

@@ -1,22 +1,36 @@
 body {
-    font-family: Arial, sans-serif;
     margin: 0;
-    padding: 0;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
+    font-family: Arial, sans-serif;
+    overflow: hidden; /* tránh cuộn trang */
 }
-
-#controls {
-    margin: 10px;
+.container {
+    display: flex;
+    height: 100vh;
+}
+.left-panel {
+    flex: 1;
+    position: relative;
+    background-color: #f9f9f9;
+}
+/* Canvas chiếm 100% kích thước của left-panel */
+canvas {
+    width: 100%;
+    height: 100%;
+    display: block;
+    background-color: #fff;
+    cursor: grab;
+}
+.right-panel {
+    width: 270px;
+    padding: 20px;
+    box-sizing: border-box;
+    border-left: 1px solid #ccc;
+    background-color: #eee;
+    text-align: center;
+    overflow-y: auto;
 }
 
 button {
-    margin: 0 5px;
+    margin: 5px;
     padding: 5px 10px;
-}
-
-canvas {
-    border: 1px solid #ccc;
-    background-color: #f8f8f8;
 }

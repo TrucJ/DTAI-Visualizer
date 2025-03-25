@@ -9,8 +9,21 @@ const nextBtn = document.getElementById('nextBtn');
 const hexSize = 30; // bán kính hexagon
 let scale = 1;
 const sqrt3 = Math.sqrt(3);
-const centerX = canvas.width / 2;
-const centerY = canvas.height / 2;
+// Lấy kích thước canvas theo kích thước thực của left-panel
+function updateCanvasSize() {
+  canvas.width = canvas.clientWidth;
+  canvas.height = canvas.clientHeight;
+}
+updateCanvasSize();
+
+// Tính tâm của canvas dựa trên kích thước hiện tại
+function getCenter() {
+  return {
+    x: canvas.width / 2,
+    y: canvas.height / 2
+  };
+}
+const center = getCenter();
 
 // Màu sắc cho các loại ô (cells)
 const cellColors = {
@@ -27,7 +40,7 @@ let currentState = 0;
 function axialToPixel(q, r) {
   const x = hexSize * scale * sqrt3 * (q + r / 2);
   const y = hexSize * scale * (3 / 2 * r);
-  return { x: centerX + x, y: centerY + y };
+  return { x: center.x + x, y: center.y + y };
 }
 
 // Hàm lấy tọa độ các đỉnh của hexagon tại tâm (cx, cy)
@@ -73,6 +86,12 @@ function drawHex(cx, cy, label, fillColor) {
 
 // Hàm vẽ map dựa trên một state (dữ liệu JSON với key dạng snake_case)
 function drawMap(state) {
+  // Cập nhật kích thước canvas nếu có thay đổi
+  updateCanvasSize();
+
+  // Cập nhật tâm của canvas
+  const center = getCenter();
+
   // Xóa canvas
   ctx.clearRect(0, 0, canvas.width, canvas.height);
 
@@ -90,7 +109,7 @@ function drawMap(state) {
   // Nếu treasure xuất hiện, vẽ một dấu hiệu ở giữa map
   if (map.treasure_appeared) {
     ctx.beginPath();
-    ctx.arc(centerX, centerY, 15 * scale, 0, 2 * Math.PI);
+    ctx.arc(center.x, center.y, 15 * scale, 0, 2 * Math.PI);
     ctx.fillStyle = "gold";
     ctx.fill();
     ctx.strokeStyle = "black";
@@ -99,7 +118,7 @@ function drawMap(state) {
     ctx.fillStyle = "black";
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
-    ctx.fillText(map.treasure_value, centerX, centerY);
+    ctx.fillText(map.treasure_value, center.x, center.y);
   }
 
   // Vẽ các player (players có các key: q, r, s, points, shield, alive, missiles, missiles_fired)
@@ -147,7 +166,7 @@ function drawMap(state) {
     }
   });
 
-  // Hiển thị thông tin lượt di chuyển (moveleft)
+  // Hiển thị thông tin lượt di chuyển (moveleft) và trạng thái hiện tại
   infoSpan.textContent = `Moves left: ${map.moveleft} | State: ${currentState + 1} / ${states.length}`;
 }
 
