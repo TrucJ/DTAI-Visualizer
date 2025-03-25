@@ -107,9 +107,9 @@ function drawHex(cx, cy, label, fillColor) {
 function axialToPixel(q, r) {
   const sqrt3 = Math.sqrt(3);
   const center = getCenter();
-  const x = hexSize * scale * sqrt3 * (q + r/2);
-  const y = hexSize * scale * (3/2 * r);
-  return { x: center.x + x, y: center.y + y };
+  const x = hexSize * scale * sqrt3 * (q + r / 2);
+  const y = hexSize * scale * (3 / 2 * r);
+  return {x: center.x + x, y: center.y + y};
 }
 
 // --- Hàm vẽ map dựa trên dữ liệu state ---
@@ -122,29 +122,49 @@ function drawMap(state) {
   updateCanvasSize();
   const center = getCenter();
   ctx.clearRect(0, 0, canvas.width, canvas.height);
-
   const map = state.map;
 
-  // Vẽ các ô cell
+  radius = map.radius
+
+  // Tạo dictionary cho các cell có trong dữ liệu (key: "q,r,s")
+  const cellMap = {};
   map.cells.forEach(cell => {
-    const { q, r, s, value } = cell;
-    const pos = axialToPixel(q, r);
-    // Nếu ô có giá trị "gold", sử dụng màu dựa trên số lượng (ví dụ: gold1, gold2, …)
-    let fillColor;
-    let label = value;
-    if (value === "D" || value === "S") {
-      fillColor = tileColors[value === "D" ? "danger" : "shield"];
-    } else if (!isNaN(parseInt(value))) {
-      // value là số, chọn màu gold tương ứng với số (giới hạn từ 1 đến 6)
-      const count = Math.min(Math.max(parseInt(value), 1), 6);
-      fillColor = tileColors["gold" + count];
-    } else {
-      fillColor = "white";
-    }
-    drawHex(pos.x, pos.y, label, fillColor);
+    const key = `${cell.q},${cell.r},${cell.s}`;
+    cellMap[key] = cell;
   });
 
-  // Nếu treasure xuất hiện, vẽ ở trung tâm
+  // Duyệt qua tất cả các ô trong vùng có bán kính radius
+  for (let q = -radius; q <= radius; q++) {
+    const r1 = Math.max(-radius, -q - radius);
+    const r2 = Math.min(radius, -q + radius);
+    for (let r = r1; r <= r2; r++) {
+      const s = -q - r;
+      const key = `${q},${r},${s}`;
+      const pos = axialToPixel(q, r);
+      let fillColor;
+      let label = "";
+      if (cellMap.hasOwnProperty(key)) {
+        // Nếu có dữ liệu cho ô này thì sử dụng thông tin từ JSON
+        const cell = cellMap[key];
+        label = cell.value;
+        if (cell.value === "D" || cell.value === "S") {
+          fillColor = tileColors[cell.value === "D" ? "danger" : "shield"];
+        } else if (!isNaN(parseInt(cell.value))) {
+          // Với ô có giá trị số (ví dụ ô gold), chọn màu dựa vào số (giới hạn từ 1 đến 6)
+          const count = Math.min(Math.max(parseInt(cell.value), 1), 6);
+          fillColor = tileColors["gold" + count];
+        } else {
+          fillColor = "white";
+        }
+      } else {
+        // Ô không có dữ liệu: vẽ ô trống màu trắng
+        fillColor = "white";
+      }
+      drawHex(pos.x, pos.y, label, fillColor);
+    }
+  }
+
+  // Vẽ treasure nếu xuất hiện
   if (map.treasure_appeared) {
     ctx.beginPath();
     ctx.arc(center.x, center.y, 15 * scale, 0, 2 * Math.PI);
@@ -161,24 +181,21 @@ function drawMap(state) {
 
   // Vẽ các player
   state.players.forEach(player => {
-    const { q, r, s, points, shield, alive, missiles_fired } = player;
-    const pos = axialToPixel(q, r);
+    const pos = axialToPixel(player.q, player.r);
     ctx.beginPath();
-    ctx.arc(pos.x, pos.y, 10 * scale, 0, 2 * Math.PI);
-    ctx.fillStyle = alive ? "limegreen" : "gray";
+    ctx.arc(pos.x, pos.y, 12 * scale, 0, 2 * Math.PI);
+    ctx.fillStyle = player.alive ? "limegreen" : "gray";
     ctx.fill();
     ctx.strokeStyle = "black";
     ctx.stroke();
 
-    // Hiển thị điểm số
     ctx.font = `bold ${12 * scale}px Arial`;
     ctx.fillStyle = "black";
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
-    ctx.fillText(points, pos.x, pos.y);
+    ctx.fillText(player.points, pos.x, pos.y);
 
-    // Nếu có shield, vẽ vòng tròn bao quanh
-    if (shield) {
+    if (player.shield) {
       ctx.beginPath();
       ctx.arc(pos.x, pos.y, 15 * scale, 0, 2 * Math.PI);
       ctx.strokeStyle = "dodgerblue";
@@ -186,14 +203,25 @@ function drawMap(state) {
       ctx.stroke();
       ctx.lineWidth = 1;
     }
+  });
 
-    // Vẽ các missile đã bắn (nếu có)
-    if (missiles_fired && missiles_fired.length > 0) {
-      missiles_fired.forEach(missile => {
+  // Vẽ các missiles
+  state.players.forEach(player => {
+    if (player.missiles_fired && player.missiles_fired.length > 0) {
+      player.missiles_fired.forEach(missile => {
         const mPos = axialToPixel(missile.q, missile.r);
+        // Vòng tròn ngoài
         ctx.beginPath();
-        ctx.arc(mPos.x, mPos.y, 5 * scale, 0, 2 * Math.PI);
+        ctx.arc(mPos.x, mPos.y, 8 * scale, 0, 2 * Math.PI);
         ctx.fillStyle = "orangered";
+        ctx.fill();
+        ctx.strokeStyle = "black";
+        ctx.stroke();
+
+        // Vòng tròn trong
+        ctx.beginPath();
+        ctx.arc(mPos.x, mPos.y, 4 * scale, 0, 2 * Math.PI);
+        ctx.fillStyle = "yellow";
         ctx.fill();
         ctx.strokeStyle = "black";
         ctx.stroke();
@@ -201,7 +229,6 @@ function drawMap(state) {
     }
   });
 
-  // Hiển thị thông tin lượt di chuyển và trạng thái hiện tại
   infoSpan.textContent = `Moves left: ${map.moveleft} | State: ${currentState + 1} / ${states.length}`;
 }
 
@@ -273,7 +300,7 @@ canvas.addEventListener("touchend", function (event) {
 });
 
 // Cập nhật kích thước canvas khi load và resize
-window.addEventListener('load', function(){
+window.addEventListener('load', function () {
   updateCanvasSize();
   if (states.length > 0) drawMap(states[currentState]);
 });
@@ -285,14 +312,14 @@ function updateButtons() {
   nextBtn.disabled = currentState >= states.length - 1;
 }
 
-prevBtn.addEventListener('click', function() {
+prevBtn.addEventListener('click', function () {
   if (currentState > 0) {
     currentState--;
     drawMap(states[currentState]);
     updateButtons();
   }
 });
-nextBtn.addEventListener('click', function() {
+nextBtn.addEventListener('click', function () {
   if (currentState < states.length - 1) {
     currentState++;
     drawMap(states[currentState]);
@@ -301,11 +328,11 @@ nextBtn.addEventListener('click', function() {
 });
 
 // --- Xử lý file upload ---
-fileInput.addEventListener('change', function(e) {
+fileInput.addEventListener('change', function (e) {
   const file = e.target.files[0];
   if (!file) return;
   const reader = new FileReader();
-  reader.onload = function(evt) {
+  reader.onload = function (evt) {
     try {
       // File JSON phải có cấu trúc là 1 mảng các state
       states = JSON.parse(evt.target.result);
