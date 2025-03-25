@@ -31,7 +31,7 @@ const ctx = canvas.getContext("2d");
 const prevBtn = document.getElementById("prevBtn");
 const nextBtn = document.getElementById("nextBtn");
 const infoSpan = document.getElementById("info");
-const overlay = document.getElementById("uploadOverlay");
+const uploadArea = document.getElementById("uploadArea");
 const overlayFileInput = document.getElementById("overlayFileInput");
 
 // Dữ liệu các state (mảng các state) và state hiện tại
@@ -347,6 +347,29 @@ nextBtn.addEventListener('click', function () {
 });
 
 // --- Xử lý file upload từ overlay ---
+uploadArea.addEventListener("click", function() {
+  overlayFileInput.click();
+});
+// Xử lý sự kiện kéo thả (drag & drop)
+uploadArea.addEventListener("dragover", function(e) {
+  e.preventDefault();
+  uploadArea.style.backgroundColor = "#f0f0f0";
+});
+uploadArea.addEventListener("dragleave", function(e) {
+  e.preventDefault();
+  uploadArea.style.backgroundColor = "";
+});
+uploadArea.addEventListener("drop", function(e) {
+  e.preventDefault();
+  uploadArea.style.backgroundColor = "";
+  const file = e.dataTransfer.files[0];
+  if (file) {
+    overlayFileInput.files = e.dataTransfer.files;
+    // Gọi xử lý file upload (như đã định nghĩa trong phần xử lý overlayFileInput)
+    const event = new Event('change');
+    overlayFileInput.dispatchEvent(event);
+  }
+});
 overlayFileInput.addEventListener('change', function (e) {
   const file = e.target.files[0];
   if (!file) return;

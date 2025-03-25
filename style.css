@@ -48,11 +48,19 @@ button {
     z-index: 1000;
 }
 
-.overlay-content {
-    background: #fff;
-    padding: 20px 30px;
+.upload-area {
+    border: 2px dashed #aaa;
+    padding: 30px;
     border-radius: 5px;
     text-align: center;
+    cursor: pointer;
+    transition: background-color 0.3s, border-color 0.3s;
+    color: #f0f0f0;
+}
+.upload-area:hover {
+    background-color: #f0f0f0;
+    border-color: #777;
+    color: black;
 }
 
 #playersTable {
