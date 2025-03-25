@@ -1,57 +1,75 @@
-const canvas = document.getElementById('visualizerCanvas');
-const ctx = canvas.getContext('2d');
-const fileInput = document.getElementById('fileInput');
-const infoSpan = document.getElementById('info');
-const prevBtn = document.getElementById('prevBtn');
-const nextBtn = document.getElementById('nextBtn');
-
-// Các cấu hình cơ bản cho vẽ hexagon
-const hexSize = 30; // bán kính hexagon
+// --- Các biến toàn cục (tham khảo global.js) ---
+let radius = 10; // Mặc định, nếu cần thiết radius có thể được lấy từ dữ liệu JSON
+const hexSize = 30;
 let scale = 1;
-const sqrt3 = Math.sqrt(3);
-// Lấy kích thước canvas theo kích thước thực của left-panel
-function updateCanvasSize() {
-  canvas.width = canvas.clientWidth;
-  canvas.height = canvas.clientHeight;
-}
-updateCanvasSize();
+let offsetX = 0, offsetY = 0;
+let isDragging = false, startDragX = 0, startDragY = 0;
+let hasMoved = false;
+let touchStartDistance = null;
 
-// Tính tâm của canvas dựa trên kích thước hiện tại
-function getCenter() {
-  return {
-    x: canvas.width / 2,
-    y: canvas.height / 2
-  };
-}
-const center = getCenter();
-
-// Màu sắc cho các loại ô (cells)
-const cellColors = {
-  "D": "rgba(255, 100, 100, 0.8)",  // ô danger
-  "S": "rgba(135, 206, 235, 0.8)",  // ô shield
-  "": "white" // ô trống
+// Các cấu hình màu sắc và nhãn (tham khảo global.js)
+const tileColors = {
+  danger: "red",
+  shield: "skyblue",
+  gold1: "#FFFF66",
+  gold2: "#FFFF44",
+  gold3: "#FFFF22",
+  gold4: "#FFFF00",
+  gold5: "#FFEE00",
+  gold6: "#FFDD00"
+};
+const tileLabels = {
+  danger: "D",
+  shield: "S"
 };
 
-// Biến lưu dữ liệu các state và index hiện tại
+// Lấy đối tượng canvas (ID: hexMap)
+const canvas = document.getElementById("hexMap");
+const ctx = canvas.getContext("2d");
+
+// Các đối tượng DOM trong panel
+const fileInput = document.getElementById("fileInput");
+const prevBtn = document.getElementById("prevBtn");
+const nextBtn = document.getElementById("nextBtn");
+const infoSpan = document.getElementById("info");
+
+// Dữ liệu các state (mảng các state) và state hiện tại
 let states = [];
 let currentState = 0;
 
-// Hàm chuyển đổi từ tọa độ axial sang pixel
-function axialToPixel(q, r) {
-  const x = hexSize * scale * sqrt3 * (q + r / 2);
-  const y = hexSize * scale * (3 / 2 * r);
-  return { x: center.x + x, y: center.y + y };
+// Cập nhật kích thước canvas theo container (sử dụng devicePixelRatio)
+function updateCanvasSize() {
+  const dpr = window.devicePixelRatio || 1;
+  const leftPanel = document.querySelector('.left-panel');
+  const width = leftPanel.clientWidth;
+  const height = leftPanel.clientHeight;
+  canvas.width = width * dpr;
+  canvas.height = height * dpr;
+  canvas.style.width = width + "px";
+  canvas.style.height = height + "px";
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
+  ctx.scale(dpr, dpr);
 }
 
-// Hàm lấy tọa độ các đỉnh của hexagon tại tâm (cx, cy)
-function getHexCorners(cx, cy) {
+// Lấy tâm của canvas
+function getCenter() {
+  return {
+    x: canvas.clientWidth / 2,
+    y: canvas.clientHeight / 2
+  };
+}
+
+// --- Các hàm vẽ canvas (tham khảo canvas.js) ---
+// Hàm lấy tọa độ các đỉnh của hexagon
+function getHexCornerCoords(cx, cy) {
   const corners = [];
   const size = hexSize * scale;
   for (let i = 0; i < 6; i++) {
-    const angle = Math.PI / 180 * (60 * i - 30);
+    const angle_deg = 60 * i - 30;
+    const angle_rad = Math.PI / 180 * angle_deg;
     corners.push({
-      x: cx + size * Math.cos(angle),
-      y: cy + size * Math.sin(angle)
+      x: cx + size * Math.cos(angle_rad),
+      y: cy + size * Math.sin(angle_rad)
     });
   }
   return corners;
@@ -59,19 +77,20 @@ function getHexCorners(cx, cy) {
 
 // Vẽ hexagon tại vị trí (cx, cy) với label và màu nền
 function drawHex(cx, cy, label, fillColor) {
-  const corners = getHexCorners(cx, cy);
+  const corners = getHexCornerCoords(cx, cy);
   ctx.beginPath();
   ctx.moveTo(corners[0].x, corners[0].y);
   for (let i = 1; i < corners.length; i++) {
     ctx.lineTo(corners[i].x, corners[i].y);
   }
   ctx.closePath();
-  ctx.fillStyle = fillColor;
-  ctx.fill();
+  if (fillColor) {
+    ctx.fillStyle = fillColor;
+    ctx.fill();
+  }
   ctx.strokeStyle = "black";
   ctx.stroke();
 
-  // Vẽ label với font in đậm, kích thước tỷ lệ thuận với scale
   if (label) {
     const fontSize = 16 * scale;
     if (fontSize > 6) {
@@ -84,29 +103,48 @@ function drawHex(cx, cy, label, fillColor) {
   }
 }
 
-// Hàm vẽ map dựa trên một state (dữ liệu JSON với key dạng snake_case)
-function drawMap(state) {
-  // Cập nhật kích thước canvas nếu có thay đổi
-  updateCanvasSize();
-
-  // Cập nhật tâm của canvas
+// Hàm chuyển đổi tọa độ axial sang pixel
+function axialToPixel(q, r) {
+  const sqrt3 = Math.sqrt(3);
   const center = getCenter();
+  const x = hexSize * scale * sqrt3 * (q + r/2);
+  const y = hexSize * scale * (3/2 * r);
+  return { x: center.x + x, y: center.y + y };
+}
 
-  // Xóa canvas
+// --- Hàm vẽ map dựa trên dữ liệu state ---
+// Dữ liệu state được kỳ vọng có cấu trúc snake_case:
+// {
+//    map: { moveleft, treasure_appeared, treasure_value, cells: [{q, r, s, value}, ...] },
+//    players: [{ q, r, s, points, shield, alive, missiles_fired: [{q, r, s}, ...] }, ... ]
+// }
+function drawMap(state) {
+  updateCanvasSize();
+  const center = getCenter();
   ctx.clearRect(0, 0, canvas.width, canvas.height);
 
   const map = state.map;
 
-  // Vẽ các ô cell của map (cells có các key: q, r, s, value)
+  // Vẽ các ô cell
   map.cells.forEach(cell => {
     const { q, r, s, value } = cell;
-    const { x, y } = axialToPixel(q, r);
-    let fillColor = cellColors[value] || "white";
-    let label = value; // Hiển thị giá trị của cell
-    drawHex(x, y, label, fillColor);
+    const pos = axialToPixel(q, r);
+    // Nếu ô có giá trị "gold", sử dụng màu dựa trên số lượng (ví dụ: gold1, gold2, …)
+    let fillColor;
+    let label = value;
+    if (value === "D" || value === "S") {
+      fillColor = tileColors[value === "D" ? "danger" : "shield"];
+    } else if (!isNaN(parseInt(value))) {
+      // value là số, chọn màu gold tương ứng với số (giới hạn từ 1 đến 6)
+      const count = Math.min(Math.max(parseInt(value), 1), 6);
+      fillColor = tileColors["gold" + count];
+    } else {
+      fillColor = "white";
+    }
+    drawHex(pos.x, pos.y, label, fillColor);
   });
 
-  // Nếu treasure xuất hiện, vẽ một dấu hiệu ở giữa map
+  // Nếu treasure xuất hiện, vẽ ở trung tâm
   if (map.treasure_appeared) {
     ctx.beginPath();
     ctx.arc(center.x, center.y, 15 * scale, 0, 2 * Math.PI);
@@ -121,43 +159,40 @@ function drawMap(state) {
     ctx.fillText(map.treasure_value, center.x, center.y);
   }
 
-  // Vẽ các player (players có các key: q, r, s, points, shield, alive, missiles, missiles_fired)
-  const players = state.players;
-  players.forEach(player => {
-    const { q, r, s, points, shield, alive, missiles, missiles_fired } = player;
-    const { x, y } = axialToPixel(q, r);
-    // Vẽ vòng tròn cho player, xanh nếu alive, xám nếu không
+  // Vẽ các player
+  state.players.forEach(player => {
+    const { q, r, s, points, shield, alive, missiles_fired } = player;
+    const pos = axialToPixel(q, r);
     ctx.beginPath();
-    ctx.arc(x, y, 10 * scale, 0, 2 * Math.PI);
+    ctx.arc(pos.x, pos.y, 10 * scale, 0, 2 * Math.PI);
     ctx.fillStyle = alive ? "limegreen" : "gray";
     ctx.fill();
     ctx.strokeStyle = "black";
     ctx.stroke();
 
-    // Hiển thị điểm số của player
+    // Hiển thị điểm số
     ctx.font = `bold ${12 * scale}px Arial`;
     ctx.fillStyle = "black";
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
-    ctx.fillText(points, x, y);
+    ctx.fillText(points, pos.x, pos.y);
 
-    // Nếu player có shield, vẽ vòng tròn bao quanh
+    // Nếu có shield, vẽ vòng tròn bao quanh
     if (shield) {
       ctx.beginPath();
-      ctx.arc(x, y, 15 * scale, 0, 2 * Math.PI);
+      ctx.arc(pos.x, pos.y, 15 * scale, 0, 2 * Math.PI);
       ctx.strokeStyle = "dodgerblue";
       ctx.lineWidth = 3 * scale;
       ctx.stroke();
       ctx.lineWidth = 1;
     }
 
-    // Vẽ các missile đã bắn nếu có (missiles_fired là mảng các đối tượng có key q, r, s)
+    // Vẽ các missile đã bắn (nếu có)
     if (missiles_fired && missiles_fired.length > 0) {
       missiles_fired.forEach(missile => {
-        const { q: mq, r: mr, s: ms } = missile;
-        const pos = axialToPixel(mq, mr);
+        const mPos = axialToPixel(missile.q, missile.r);
         ctx.beginPath();
-        ctx.arc(pos.x, pos.y, 5 * scale, 0, 2 * Math.PI);
+        ctx.arc(mPos.x, mPos.y, 5 * scale, 0, 2 * Math.PI);
         ctx.fillStyle = "orangered";
         ctx.fill();
         ctx.strokeStyle = "black";
@@ -166,17 +201,106 @@ function drawMap(state) {
     }
   });
 
-  // Hiển thị thông tin lượt di chuyển (moveleft) và trạng thái hiện tại
+  // Hiển thị thông tin lượt di chuyển và trạng thái hiện tại
   infoSpan.textContent = `Moves left: ${map.moveleft} | State: ${currentState + 1} / ${states.length}`;
 }
 
-// Cập nhật trạng thái của button next/previous dựa vào currentState
+// --- Xử lý sự kiện canvas: kéo, zoom, touch ---
+// Drag
+canvas.addEventListener("mousedown", function (event) {
+  isDragging = true;
+  hasMoved = false;
+  startDragX = event.clientX;
+  startDragY = event.clientY;
+  canvas.style.cursor = "grabbing";
+});
+canvas.addEventListener("mousemove", function (event) {
+  if (isDragging) {
+    const dx = event.clientX - startDragX;
+    const dy = event.clientY - startDragY;
+    if (Math.abs(dx) > 2 || Math.abs(dy) > 2) {
+      hasMoved = true;
+    }
+    offsetX += dx;
+    offsetY += dy;
+    startDragX = event.clientX;
+    startDragY = event.clientY;
+    drawMap(states[currentState]);
+  }
+});
+canvas.addEventListener("mouseup", function () {
+  isDragging = false;
+  canvas.style.cursor = "grab";
+});
+canvas.addEventListener("mouseleave", function () {
+  isDragging = false;
+  canvas.style.cursor = "grab";
+});
+// Zoom
+canvas.addEventListener("wheel", function (event) {
+  event.preventDefault();
+  if (event.deltaY < 0) {
+    scale *= 1.05;
+  } else {
+    scale /= 1.05;
+  }
+  drawMap(states[currentState]);
+});
+// Touch zoom
+canvas.addEventListener("touchstart", function (event) {
+  if (event.touches.length === 2) {
+    const dx = event.touches[0].clientX - event.touches[1].clientX;
+    const dy = event.touches[0].clientY - event.touches[1].clientY;
+    touchStartDistance = Math.sqrt(dx * dx + dy * dy);
+  }
+});
+canvas.addEventListener("touchmove", function (event) {
+  if (event.touches.length === 2 && touchStartDistance !== null) {
+    event.preventDefault();
+    const dx = event.touches[0].clientX - event.touches[1].clientX;
+    const dy = event.touches[0].clientY - event.touches[1].clientY;
+    const newDistance = Math.sqrt(dx * dx + dy * dy);
+    const scaleFactor = newDistance / touchStartDistance;
+    scale *= scaleFactor;
+    touchStartDistance = newDistance;
+    drawMap(states[currentState]);
+  }
+});
+canvas.addEventListener("touchend", function (event) {
+  if (event.touches.length < 2) {
+    touchStartDistance = null;
+  }
+});
+
+// Cập nhật kích thước canvas khi load và resize
+window.addEventListener('load', function(){
+  updateCanvasSize();
+  if (states.length > 0) drawMap(states[currentState]);
+});
+window.addEventListener('resize', updateCanvasSize);
+
+// --- Xử lý sự kiện cho các button Next / Previous ---
 function updateButtons() {
   prevBtn.disabled = currentState <= 0;
   nextBtn.disabled = currentState >= states.length - 1;
 }
 
-// Xử lý file upload
+prevBtn.addEventListener('click', function() {
+  if (currentState > 0) {
+    currentState--;
+    drawMap(states[currentState]);
+    updateButtons();
+  }
+});
+nextBtn.addEventListener('click', function() {
+  if (currentState < states.length - 1) {
+    currentState++;
+    drawMap(states[currentState]);
+    updateButtons();
+  }
+});
+
+// --- Xử lý file upload ---
 fileInput.addEventListener('change', function(e) {
   const file = e.target.files[0];
   if (!file) return;
@@ -197,22 +321,4 @@ fileInput.addEventListener('change', function(e) {
     }
   };
   reader.readAsText(file);
-});
-
-// Xử lý sự kiện cho button Next
-nextBtn.addEventListener('click', function() {
-  if (currentState < states.length - 1) {
-    currentState++;
-    drawMap(states[currentState]);
-    updateButtons();
-  }
-});
-
-// Xử lý sự kiện cho button Previous
-prevBtn.addEventListener('click', function() {
-  if (currentState > 0) {
-    currentState--;
-    drawMap(states[currentState]);
-    updateButtons();
-  }
 });

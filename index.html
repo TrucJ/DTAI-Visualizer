@@ -3,15 +3,16 @@
 <head>
     <meta charset="UTF-8">
     <title>Game Visualizer</title>
+    <link rel="icon" href="logo.png" type="image/png">
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
 <div class="container">
-    <!-- Left Panel: chứa canvas -->
+    <!-- Left Panel: Canvas hiển thị map -->
     <div class="left-panel">
-        <canvas id="visualizerCanvas"></canvas>
+        <canvas id="hexMap"></canvas>
     </div>
-    <!-- Right Panel: chứa các nút điều khiển và thông tin -->
+    <!-- Right Panel: Control Panel -->
     <div class="right-panel">
         <h2>Control Panel</h2>
         <input type="file" id="fileInput" accept=".json"><br><br>
@@ -20,7 +21,6 @@
         <p id="info"></p>
     </div>
 </div>
-
 <script src="script.js"></script>
 </body>
 </html>
