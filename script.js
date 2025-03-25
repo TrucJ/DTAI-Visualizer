@@ -1,6 +1,6 @@
 // --- Các biến toàn cục (tham khảo global.js) ---
 let radius = 10; // Mặc định, nếu cần thiết radius có thể được lấy từ dữ liệu JSON
-const hexSize = 30;
+const hexSize = 24;
 let scale = 1;
 let offsetX = 0, offsetY = 0;
 let isDragging = false, startDragX = 0, startDragY = 0;
