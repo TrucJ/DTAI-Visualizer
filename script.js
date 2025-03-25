@@ -27,11 +27,12 @@ const tileLabels = {
 const canvas = document.getElementById("hexMap");
 const ctx = canvas.getContext("2d");
 
-// Các đối tượng DOM trong panel
-const fileInput = document.getElementById("fileInput");
+// Các đối tượng DOM trong panel và overlay
 const prevBtn = document.getElementById("prevBtn");
 const nextBtn = document.getElementById("nextBtn");
 const infoSpan = document.getElementById("info");
+const overlay = document.getElementById("uploadOverlay");
+const overlayFileInput = document.getElementById("overlayFileInput");
 
 // Dữ liệu các state (mảng các state) và state hiện tại
 let states = [];
@@ -103,7 +104,7 @@ function drawHex(cx, cy, label, fillColor) {
   }
 }
 
-// Hàm chuyển đổi tọa độ axial sang pixel
+// Hàm chuyển đổi từ tọa độ axial sang pixel
 function axialToPixel(q, r) {
   const sqrt3 = Math.sqrt(3);
   const center = getCenter();
@@ -113,15 +114,16 @@ function axialToPixel(q, r) {
 }
 
 // --- Hàm vẽ map dựa trên dữ liệu state ---
-// Dữ liệu state được kỳ vọng có cấu trúc snake_case:
+// Dữ liệu state có cấu trúc snake_case:
 // {
-//    map: { moveleft, treasure_appeared, treasure_value, cells: [{q, r, s, value}, ...] },
-//    players: [{ q, r, s, points, shield, alive, missiles_fired: [{q, r, s}, ...] }, ... ]
+//   map: { moveleft, treasure_appeared, treasure_value, cells: [{q, r, s, value}, ...] },
+//   players: [{q, r, s, points, shield, alive, missiles_fired: [{q, r, s}, ...]}, ... ]
 // }
 function drawMap(state) {
   updateCanvasSize();
   const center = getCenter();
   ctx.clearRect(0, 0, canvas.width, canvas.height);
+
   const map = state.map;
 
   radius = map.radius
@@ -141,23 +143,20 @@ function drawMap(state) {
       const s = -q - r;
       const key = `${q},${r},${s}`;
       const pos = axialToPixel(q, r);
-      let fillColor;
-      let label = "";
+      let fillColor, label = "";
       if (cellMap.hasOwnProperty(key)) {
-        // Nếu có dữ liệu cho ô này thì sử dụng thông tin từ JSON
         const cell = cellMap[key];
         label = cell.value;
         if (cell.value === "D" || cell.value === "S") {
           fillColor = tileColors[cell.value === "D" ? "danger" : "shield"];
         } else if (!isNaN(parseInt(cell.value))) {
-          // Với ô có giá trị số (ví dụ ô gold), chọn màu dựa vào số (giới hạn từ 1 đến 6)
           const count = Math.min(Math.max(parseInt(cell.value), 1), 6);
           fillColor = tileColors["gold" + count];
         } else {
           fillColor = "white";
         }
       } else {
-        // Ô không có dữ liệu: vẽ ô trống màu trắng
+        // Ô trống vẽ màu trắng
         fillColor = "white";
       }
       drawHex(pos.x, pos.y, label, fillColor);
@@ -306,7 +305,7 @@ window.addEventListener('load', function () {
 });
 window.addEventListener('resize', updateCanvasSize);
 
-// --- Xử lý sự kiện cho các button Next / Previous ---
+// --- Xử lý các button Next / Previous ---
 function updateButtons() {
   prevBtn.disabled = currentState <= 0;
   nextBtn.disabled = currentState >= states.length - 1;
@@ -327,8 +326,8 @@ nextBtn.addEventListener('click', function () {
   }
 });
 
-// --- Xử lý file upload ---
-fileInput.addEventListener('change', function (e) {
+// --- Xử lý file upload từ overlay ---
+overlayFileInput.addEventListener('change', function (e) {
   const file = e.target.files[0];
   if (!file) return;
   const reader = new FileReader();
@@ -343,6 +342,8 @@ fileInput.addEventListener('change', function (e) {
       currentState = 0;
       drawMap(states[currentState]);
       updateButtons();
+      // Ẩn overlay sau khi upload thành công
+      overlay.style.display = "none";
     } catch (err) {
       alert("Lỗi đọc file JSON: " + err.message);
     }
