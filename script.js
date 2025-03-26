@@ -361,6 +361,15 @@ nextBtn.addEventListener('click', function () {
     updateButtons();
   }
 });
+// Xử lý sự kiện bàn phím để chuyển đổi tile active
+document.addEventListener("keydown", function (event) {
+  const key = event.key.toLowerCase();
+  if (key === "arrowleft") {
+    prevBtn.click();
+  } else if (key === "arrowright") {
+    nextBtn.click();
+  }
+});
 
 // --- Xử lý file upload từ overlay ---
 uploadArea.addEventListener("click", function() {
