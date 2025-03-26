@@ -30,10 +30,14 @@ const ctx = canvas.getContext("2d");
 // Các đối tượng DOM trong panel và overlay
 const prevBtn = document.getElementById("prevBtn");
 const nextBtn = document.getElementById("nextBtn");
-const infoSpan = document.getElementById("info");
+const movesLeftSpan = document.getElementById("moves_left");
+const stateSpan = document.getElementById("state");
 const uploadArea = document.getElementById("uploadArea");
 const overlay = document.getElementById("uploadOverlay");
 const overlayFileInput = document.getElementById("overlayFileInput");
+
+// Biến lưu trữ thông tin về player
+playerNames = ["1", "2", "3"]
 
 // Dữ liệu các state (mảng các state) và state hiện tại
 let states = [];
@@ -123,7 +127,7 @@ function updatePlayersTable(state) {
     const row = document.createElement("tr");
 
     const cellPlayer = document.createElement("td");
-    cellPlayer.textContent = index + 1;
+    cellPlayer.textContent = playerNames[index];
     row.appendChild(cellPlayer);
 
     const cellPoints = document.createElement("td");
@@ -262,7 +266,8 @@ function drawMap(state) {
     }
   });
 
-  infoSpan.textContent = `Moves left: ${map.moveleft} | State: ${currentState + 1} / ${states.length}`;
+  movesLeftSpan.textContent = `${map.moveleft} | State: ${currentState} / ${states.length - 1}`;
+  stateSpan.textContent = `${currentState} / ${states.length - 1}`;
   // Cập nhật bảng player
   updatePlayersTable(state);
 }
@@ -372,19 +377,19 @@ document.addEventListener("keydown", function (event) {
 });
 
 // --- Xử lý file upload từ overlay ---
-uploadArea.addEventListener("click", function() {
+uploadArea.addEventListener("click", function () {
   overlayFileInput.click();
 });
 // Xử lý sự kiện kéo thả (drag & drop)
-uploadArea.addEventListener("dragover", function(e) {
+uploadArea.addEventListener("dragover", function (e) {
   e.preventDefault();
   uploadArea.style.backgroundColor = "#f0f0f0";
 });
-uploadArea.addEventListener("dragleave", function(e) {
+uploadArea.addEventListener("dragleave", function (e) {
   e.preventDefault();
   uploadArea.style.backgroundColor = "";
 });
-uploadArea.addEventListener("drop", function(e) {
+uploadArea.addEventListener("drop", function (e) {
   e.preventDefault();
   uploadArea.style.backgroundColor = "";
   const file = e.dataTransfer.files[0];
@@ -404,16 +409,18 @@ overlayFileInput.addEventListener('change', function (e) {
       // File JSON phải có cấu trúc là 1 mảng các state
       states = JSON.parse(evt.target.result);
       if (!Array.isArray(states) || states.length === 0) {
-        alert("File JSON không hợp lệ hoặc rỗng!");
+        alert("Invalid or empty JSON file!");
         return;
       }
       currentState = 0;
+      const fileName = file.name.split(".")[0].split("_vs_");
+      playerNames = fileName.length === 3 ? fileName : ["1", "2", "3"];
       drawMap(states[currentState]);
       updateButtons();
       // Ẩn overlay sau khi upload thành công
       overlay.style.display = "none";
     } catch (err) {
-      alert("Lỗi đọc file JSON: " + err.message);
+        alert("Error reading JSON file: " + err.message);
     }
   };
   reader.readAsText(file);

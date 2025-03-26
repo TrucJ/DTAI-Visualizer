@@ -31,10 +31,13 @@ canvas {
     display: flex;
     flex-direction: column;
 }
-.right-panel h2 {
-    margin-top: 0;
+.right-panel h4 {
+    margin-bottom: 0;
 }
-button {
+.control-group {
+    margin-top: 30px;
+}
+.control-group button {
     margin: 5px;
     padding: 5px 10px;
     width: 100px;

@@ -2,7 +2,7 @@
 <html lang="vi">
 <head>
     <meta charset="utf-8">
-    <title>Match Visualizer - Đấu trường AI - Thách Thức 2025</title>
+    <title>Visualizer - Đấu trường AI - Thách Thức 2025</title>
     <link rel="icon" href="logo.png" type="image/png">
     <link rel="stylesheet" href="style.css">
 </head>
@@ -15,7 +15,7 @@
         <div id="uploadOverlay" class="overlay">
             <div class="upload-area" id="uploadArea">
                 <h2>Upload file</h2>
-                <p>Click hoặc kéo thả file JSON vào đây</p>
+                <p>Click or drag and drop a JSON file here</p>
                 <input type="file" id="overlayFileInput" accept=".json" hidden>
             </div>
         </div>
@@ -25,26 +25,42 @@
     <!-- Right Panel: Control Panel -->
     <div class="right-panel">
         <h2>Control Panel</h2>
-        <!-- Nút điều khiển -->
-        <div>
-            <button id="prevBtn" disabled>Previous</button>
-            <button id="nextBtn" disabled>Next</button>
-        </div>
-        <p id="info"></p>
         <!-- Bảng monitor thông tin các player -->
-        <h3>Players Info</h3>
         <table id="playersTable">
             <thead>
             <tr>
-                <th>Player</th>
-                <th>Points</th>
-                <th>Missiles</th>
+                <th>Ship</th>
+                <th>Golds</th>
+                <th>Msl</th>
             </tr>
             </thead>
             <tbody>
-            <!-- Các hàng dữ liệu sẽ được thêm qua JavaScript -->
+                <tr>
+                    <td>1</td>
+                    <td></td>
+                    <td></td>
+                </tr>
+                <tr>
+                    <td>2</td>
+                    <td></td>
+                    <td></td>
+                </tr>
+                <tr>
+                    <td>3</td>
+                    <td></td>
+                    <td></td>
+                </tr>
             </tbody>
         </table>
+        <h4>Moves left</h4>
+        <p id="moves_left">0</p>
+        <h4>State</h4>
+        <p id="state">0 / 0</p>
+        <!-- Nút điều khiển -->
+        <div class="control-group">
+            <button id="prevBtn" disabled>Previous</button>
+            <button id="nextBtn" disabled>Next</button>
+        </div>
         <!-- Liên kết -->
         <div class="footer-links">
             <a href="https://dtai-map-generator.vercel.app/" target="_blank">
