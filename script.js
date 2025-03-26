@@ -198,6 +198,21 @@ function drawMap(state) {
     ctx.fillText(map.treasure_value, center.x, center.y);
   }
 
+  // Line from player to missile targets
+  state.players.forEach(player => {
+    if (player.missiles_fired && player.missiles_fired.length > 0) {
+      const pPos = axialToPixel(player.q, player.r);
+      player.missiles_fired.forEach(missile => {
+        const mPos = axialToPixel(missile.q, missile.r);
+        ctx.beginPath();
+        ctx.moveTo(pPos.x, pPos.y);
+        ctx.lineTo(mPos.x, mPos.y);
+        ctx.strokeStyle = "orangered";
+        ctx.stroke();
+      });
+    }
+  });
+
   // Vẽ các player
   state.players.forEach(player => {
     const pos = axialToPixel(player.q, player.r);
