@@ -31,6 +31,9 @@ canvas {
     display: flex;
     flex-direction: column;
 }
+.right-panel h2 {
+    margin-top: 0;
+}
 button {
     margin: 5px;
     padding: 5px 10px;
