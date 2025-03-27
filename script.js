@@ -30,6 +30,8 @@ const ctx = canvas.getContext("2d");
 // Các đối tượng DOM trong panel và overlay
 const prevBtn = document.getElementById("prevBtn");
 const nextBtn = document.getElementById("nextBtn");
+const replayBtn = document.getElementById("replayBtn");
+const resetBtn = document.getElementById("resetBtn");
 const movesLeftSpan = document.getElementById("moves_left");
 const stateSpan = document.getElementById("state");
 const uploadArea = document.getElementById("uploadArea");
@@ -146,6 +148,9 @@ function updatePlayersTable(state) {
 // --- Hàm vẽ map (drawMap) cập nhật ---
 // Sau khi vẽ map và các player, gọi updatePlayersTable(state)
 function drawMap(state) {
+  if (!state) {
+    return;
+  }
   updateCanvasSize();
   const center = getCenter();
   ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -350,6 +355,8 @@ window.addEventListener('resize', updateCanvasSize);
 function updateButtons() {
   prevBtn.disabled = currentState <= 0;
   nextBtn.disabled = currentState >= states.length - 1;
+  replayBtn.disabled = currentState <= 0;
+  resetBtn.disabled = overlayFileInput === null;
 }
 
 prevBtn.addEventListener('click', function () {
@@ -365,6 +372,19 @@ nextBtn.addEventListener('click', function () {
     drawMap(states[currentState]);
     updateButtons();
   }
+});
+replayBtn.addEventListener('click', function () {
+  currentState = 0;
+  drawMap(states[currentState]);
+  updateButtons();
+});
+resetBtn.addEventListener('click', function () {
+  overlayFileInput.value = ""; // Reset file input
+  overlay.style.display = "flex"; // Show overlay again
+  states = [];
+  currentState = 0;
+  drawMap(null);
+  updateButtons();
 });
 // Xử lý sự kiện bàn phím để chuyển đổi tile active
 document.addEventListener("keydown", function (event) {
