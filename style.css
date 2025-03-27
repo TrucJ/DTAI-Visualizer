@@ -31,6 +31,9 @@ canvas {
     display: flex;
     flex-direction: column;
 }
+.right-panel h2 {
+    margin-bottom: 0;
+}
 .right-panel h4 {
     margin-bottom: 0;
 }
