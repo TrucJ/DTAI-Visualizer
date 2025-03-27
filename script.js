@@ -266,7 +266,7 @@ function drawMap(state) {
     }
   });
 
-  movesLeftSpan.textContent = `${map.moveleft} | State: ${currentState} / ${states.length - 1}`;
+  movesLeftSpan.textContent = `${map.moveleft}`;
   stateSpan.textContent = `${currentState} / ${states.length - 1}`;
   // Cập nhật bảng player
   updatePlayersTable(state);
